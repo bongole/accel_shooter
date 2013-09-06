@@ -5,27 +5,27 @@ import (
     "fmt"
 )
 
-type GMagickCLI struct {
+type MagickCLI struct {
     filename string
     resize_width int
     resize_height int
 }
 
-func NewGMagickCLI() *GMagickCLI {
-    m := new(GMagickCLI)
+func NewMagickCLI() *MagickCLI {
+    m := new(MagickCLI)
     return m
 }
 
-func (self *GMagickCLI) ReadImage( filename string ) {
+func (self *MagickCLI) ReadImage( filename string ) {
     self.filename = filename
 }
 
-func (self *GMagickCLI) ResizeImage(width, height int) {
+func (self *MagickCLI) ResizeImage(width, height int) {
     self.resize_width = width
     self.resize_height = height
 }
 
-func (self *GMagickCLI) GetImageBlob() []byte {
+func (self *MagickCLI) GetImageBlob() []byte {
     var ret []byte
     if self.filename != "" {
         if 0 < self.resize_width && 0 < self.resize_height {
@@ -36,7 +36,7 @@ func (self *GMagickCLI) GetImageBlob() []byte {
     return ret
 }
 
-func (self *GMagickCLI) Clear() {
+func (self *MagickCLI) Clear() {
     self.filename = ""
     self.resize_width = 0
     self.resize_height = 0

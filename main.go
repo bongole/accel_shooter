@@ -7,10 +7,18 @@ import (
     "strconv"
     "runtime"
     "runtime/debug"
+    "flag"
 )
 
+type IMagick interface {
+    ReadImage( filename string )
+    ResizeImage(width, height int)
+    GetImageBlob() []byte
+    Clear()
+}
+
 type RequestContext struct {
-    magick *Magick
+    magick IMagick
     request_count int
 }
 
@@ -32,7 +40,7 @@ func (ch Chan) ServeImage( w http.ResponseWriter, r *http.Request ) {
     filename := "test.jpg"
 
     m.ReadImage(filename)
-    m.Resize( 100, 100 )
+    m.ResizeImage( 100, 100 )
     buf := m.GetImageBlob()
 
     w.Header().Add("Content-Type", http.DetectContentType(buf))
@@ -75,6 +83,10 @@ func MyGC( ctxs CtxList ){
 }
 
 func main() {
+    var use_cli = flag.Bool("cli", false, "Use cli version")
+
+    flag.Parse()
+
     runtime.GOMAXPROCS(runtime.NumCPU())
     disableGC()
 
@@ -92,7 +104,12 @@ func main() {
 
     for i := 0; i < num_of_ch; i++ {
         ctx := new(RequestContext)
-        ctx.magick = NewMagick()
+        if *use_cli {
+            ctx.magick = NewMagickCLI()
+        } else {
+            ctx.magick = NewMagick()
+        }
+
         ctx.request_count = 0
 
         ctxs[i] = ctx

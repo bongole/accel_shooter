@@ -1,11 +1,10 @@
 package main 
 
-//#cgo pkg-config: MagickWand
-//#include <wand/MagickWand.h>
+//#cgo pkg-config: GraphicsMagickWand
+//#include <wand/magick_wand.h>
 /*
-MagickBooleanType MyMagickResizeImage(MagickWand *w,const size_t width,const size_t height,const FilterTypes filter,const double d){
-       return MagickResizeImage(w,width,height,filter,d);
-}
+unsigned int MagickResizeImage(MagickWand *,const unsigned long,const unsigned long,const FilterTypes,const double);
+unsigned char *MagickWriteImageBlob(MagickWand *,size_t *);
 */
 import "C"
 
@@ -13,6 +12,7 @@ import (
     "unsafe"
     "reflect"
     "runtime"
+    "os"
 )
 
 type Magick struct {
@@ -20,7 +20,7 @@ type Magick struct {
 }
 
 func init() {
-    C.MagickWandGenesis()
+    C.InitializeMagick(C.CString(os.Args[0]))
 }
 
 func NewMagick() *Magick {
@@ -34,12 +34,12 @@ func (self *Magick) ReadImage( filename string ) {
 }
 
 func (self *Magick) ResizeImage(width, height int) {
-    C.MyMagickResizeImage( self.magick_wand, C.size_t(width), C.size_t(height), C.LanczosFilter, 1.0 )
+    C.MagickResizeImage( self.magick_wand, C.ulong(width), C.ulong(height), C.LanczosFilter, 1.0 )
 }
 
 func (self *Magick) GetImageBlob() []byte {
     var image_size C.size_t
-    ptr := C.MagickGetImageBlob( self.magick_wand, &image_size )
+    ptr := C.MagickWriteImageBlob( self.magick_wand, &image_size )
 
     var theGoSlice []byte
     sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&theGoSlice)))
@@ -57,7 +57,8 @@ func (self *Magick) GetImageBlob() []byte {
 
 func (self *Magick) Clear() {
     if self.magick_wand != nil {
-        C.ClearMagickWand(self.magick_wand)
+        self.Destroy()
+        self.magick_wand = C.NewMagickWand()
     }
 }
 

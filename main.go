@@ -87,7 +87,9 @@ func main() {
 
     flag.Parse()
 
-    runtime.GOMAXPROCS(runtime.NumCPU())
+    num_of_cpu := runtime.NumCPU()
+
+    runtime.GOMAXPROCS(num_of_cpu)
     disableGC()
 
     go func(){
@@ -98,7 +100,7 @@ func main() {
         }
     }()
 
-    num_of_ch := runtime.NumCPU()
+    num_of_ch := num_of_cpu
     ctxs := make( CtxList, num_of_ch)
     c := make( Chan, num_of_ch )
 

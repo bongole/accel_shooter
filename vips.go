@@ -53,6 +53,19 @@ myvips_interp( const char* name )
 //                            "threaded", TRUE, NULL );
 // }
 
+static INTMASK *
+sharpen_filter( void )
+{
+
+    INTMASK *mask = im_create_imaskv( "sharpen.con", 3, 3,
+        -1, -1, -1,
+        -1, 32, -1,
+        -1, -1, -1 );
+    mask->scale = 24;
+
+    return( mask );
+}
+
 */
 import "C"
 
@@ -62,7 +75,6 @@ import (
     "reflect"
     "math"
     "os"
-    //"fmt"
 )
 
 type Magick struct {
@@ -71,8 +83,12 @@ type Magick struct {
     filename string
 }
 
+var sharpen_mask *C.INTMASK 
+var interp *C.VipsInterpolate
 func init() {
     C.im_init_world(C.CString(os.Args[0]))
+    sharpen_mask = C.sharpen_filter()
+    interp = C.myvips_interp(C.CString("nearest"))
 }
 
 func NewMagick() *Magick {
@@ -85,11 +101,8 @@ func (self *Magick) ReadImage( filename string ) {
 }
 
 func (self *Magick) ResizeImage(width, height int) {
-    tmp_in := C.im_open( C.CString(self.filename), C.CString("r"))
-    defer func(){
-        C.im_close( tmp_in )
-    }()
-
+    tmp_in := C.im_open( C.CString(self.filename), C.CString("r") )
+    
     shrink := C.calculate_shrink( tmp_in.Xsize, tmp_in.Ysize, C.int(math.Max(float64(width), float64(height))), nil )
     if( shrink > 8 ) {
         shrink = 8
@@ -103,12 +116,18 @@ func (self *Magick) ResizeImage(width, height int) {
 
     C.myvips_foreign_load( C.CString(self.filename), &self.img_in, shrink )
 
-    interp := C.myvips_interp(C.CString("bicubic"))
-
     self.img_out = C.vips_image_new()
+    tmp_out := C.vips_image_new()
 
+    C.im_conv(self.img_in, tmp_out, sharpen_mask)
     x_scale, y_scale := C.double(width)/C.double(self.img_in.Xsize), C.double(height)/C.double(self.img_in.Ysize)
-    C.im_affinei_all(self.img_in, self.img_out, interp, x_scale, 0, 0, y_scale, 0, 0)
+    C.im_affinei_all(tmp_out, self.img_out, interp, x_scale, 0, 0, y_scale, 0, 0)
+
+    defer func(){
+        C.im_close( tmp_in )
+        C.im_close( tmp_out )
+    }()
+
 }
 
 func (self *Magick) GetImageBlob() []byte {
@@ -140,5 +159,4 @@ func (self *Magick) Clear() {
         C.im_close(self.img_out)
         self.img_in = nil
     }
-
 }

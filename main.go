@@ -40,7 +40,8 @@ func (ch Chan) ServeImage( w http.ResponseWriter, r *http.Request ) {
     filename := "test.jpg"
 
     m.ReadImage(filename)
-    m.ResizeImage( 100, 100 )
+    //m.ResizeImage( 100, 100 )
+    m.ResizeImage( 640, 480 )
     buf := m.GetImageBlob()
 
     w.Header().Add("Content-Type", http.DetectContentType(buf))
